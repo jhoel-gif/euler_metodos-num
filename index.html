@@ -1,0 +1,664 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Euler en el Espacio - Simulador NASA</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #eef2f7;
+    color: #1d2939;
+}
+
+header {
+    background: linear-gradient(120deg, #10283f, #286b9b);
+    color: white;
+    text-align: center;
+    padding: 30px 15px;
+}
+
+header h1 {
+    margin: 0 0 10px;
+    font-size: 30px;
+}
+
+header p {
+    margin: 0;
+}
+
+main {
+    max-width: 1100px;
+    margin: auto;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 22px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px #00000012;
+}
+
+h2 {
+    color: #173b5c;
+    margin-top: 0;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 15px;
+}
+
+label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+input, select {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    font-size: 15px;
+}
+
+button {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 7px;
+    background: #286b9b;
+    color: white;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 12px 8px 0 0;
+}
+
+button:hover {
+    background: #174d75;
+}
+
+.secundario {
+    background: #64748b;
+}
+
+.resultados {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.metric {
+    background: #edf4f8;
+    padding: 16px;
+    border-radius: 9px;
+}
+
+.metric span {
+    display: block;
+    color: #526579;
+    font-size: 13px;
+}
+
+.metric strong {
+    display: block;
+    font-size: 23px;
+    color: #173b5c;
+    margin-top: 8px;
+}
+
+.formula {
+    background: #edf4f8;
+    padding: 15px;
+    border-radius: 8px;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+}
+
+.tabla {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 650px;
+}
+
+th, td {
+    border-bottom: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background: #173b5c;
+    color: white;
+}
+
+tr:nth-child(even) {
+    background: #f4f7fa;
+}
+
+canvas {
+    width: 100%;
+    height: 320px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.nota {
+    color: #64748b;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+footer {
+    text-align: center;
+    padding: 22px;
+    background: #173b5c;
+    color: white;
+}
+
+@media(max-width:600px) {
+    header h1 {
+        font-size: 23px;
+    }
+
+    main {
+        padding: 12px;
+    }
+
+    .card {
+        padding: 15px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>DESAFÍO: EULER EN EL ESPACIO</h1>
+    <p>Simulador matemático inspirado en la carrera espacial de la NASA</p>
+</header>
+
+<main>
+
+<section class="card">
+    <h2>1. Parámetros del cohete</h2>
+
+    <p class="nota">
+        Modifica los valores para observar cómo cambia
+        el movimiento del cohete durante el ascenso.
+    </p>
+
+    <div class="grid">
+
+        <div>
+            <label>Masa (kg)</label>
+            <input type="number" id="masa" value="1000" min="1">
+        </div>
+
+        <div>
+            <label>Empuje (N)</label>
+            <input type="number" id="empuje" value="15000" min="0">
+        </div>
+
+        <div>
+            <label>Gravedad (m/s²)</label>
+            <input type="number" id="gravedad" value="9.81" min="0.01" step="0.01">
+        </div>
+
+        <div>
+            <label>Resistencia (kg/s)</label>
+            <input type="number" id="resistencia" value="100" min="0">
+        </div>
+
+        <div>
+            <label>Paso de Euler (h)</label>
+            <select id="paso">
+                <option value="2">2 segundos</option>
+                <option value="1">1 segundo</option>
+                <option value="0.5">0.5 segundos</option>
+                <option value="0.25">0.25 segundos</option>
+                <option value="0.1">0.1 segundos</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Tiempo final (s)</label>
+            <input type="number" id="tiempo" value="20" min="1" max="120">
+        </div>
+
+    </div>
+
+    <button onclick="calcular()">CALCULAR SIMULACIÓN</button>
+    <button class="secundario" onclick="restablecer()">RESTABLECER</button>
+</section>
+
+<section class="card">
+    <h2>2. Modelo matemático</h2>
+
+    <div class="formula">
+        <strong>Segunda ley de Newton:</strong><br>
+        m · dv/dt = T - mg - kv<br><br>
+
+        <strong>Ecuación de velocidad:</strong><br>
+        dv/dt = T/m - g - (k/m)v<br><br>
+
+        <strong>Ecuación de altura:</strong><br>
+        dy/dt = v<br><br>
+
+        <strong>Método de Euler:</strong><br>
+        v(n+1) = v(n) + h · [T/m - g - (k/m)v(n)]<br>
+        y(n+1) = y(n) + h · v(n)
+    </div>
+
+    <p class="nota">
+        Se supone que la masa, el empuje, la gravedad y
+        la resistencia permanecen constantes.
+        Es un modelo educativo simplificado, no un simulador
+        de un lanzamiento espacial real.
+    </p>
+</section>
+
+<section class="card">
+    <h2>3. Resultados de la simulación</h2>
+
+    <div class="resultados">
+
+        <div class="metric">
+            <span>Velocidad Euler</span>
+            <strong id="vEuler">--</strong>
+            <span>m/s</span>
+        </div>
+
+        <div class="metric">
+            <span>Altura Euler</span>
+            <strong id="yEuler">--</strong>
+            <span>metros</span>
+        </div>
+
+        <div class="metric">
+            <span>Velocidad analítica</span>
+            <strong id="vExacta">--</strong>
+            <span>m/s</span>
+        </div>
+
+        <div class="metric">
+            <span>Altura analítica</span>
+            <strong id="yExacta">--</strong>
+            <span>metros</span>
+        </div>
+
+        <div class="metric">
+            <span>Error de velocidad</span>
+            <strong id="errorV">--</strong>
+            <span>m/s</span>
+        </div>
+
+        <div class="metric">
+            <span>Error de altura</span>
+            <strong id="errorY">--</strong>
+            <span>metros</span>
+        </div>
+
+    </div>
+</section>
+
+<section class="card">
+    <h2>4. Gráfica de velocidad</h2>
+
+    <canvas id="graficaVelocidad"></canvas>
+
+    <p class="nota">
+        Azul: método de Euler.
+        Naranja: solución analítica.
+    </p>
+</section>
+
+<section class="card">
+    <h2>5. Gráfica de altura</h2>
+
+    <canvas id="graficaAltura"></canvas>
+
+    <p class="nota">
+        Comparación de la altura calculada por ambos métodos.
+    </p>
+</section>
+
+<section class="card">
+    <h2>6. Tabla de iteraciones</h2>
+
+    <div class="tabla">
+        <table>
+            <thead>
+                <tr>
+                    <th>Tiempo (s)</th>
+                    <th>Velocidad Euler</th>
+                    <th>Altura Euler</th>
+                    <th>Velocidad exacta</th>
+                    <th>Altura exacta</th>
+                </tr>
+            </thead>
+
+            <tbody id="tablaResultados"></tbody>
+        </table>
+    </div>
+</section>
+
+<section class="card">
+    <h2>7. Preguntas de análisis</h2>
+
+    <ol>
+        <li>¿Qué sucede con la velocidad cuando aumenta el tiempo?</li>
+        <li>¿Cómo cambia el error al reducir el paso de Euler?</li>
+        <li>¿Por qué Euler puede subestimar la altura?</li>
+        <li>¿Qué variables reales no considera este modelo?</li>
+        <li>¿Por qué una trayectoria espacial real necesita
+            cálculos más complejos?</li>
+    </ol>
+</section>
+
+</main>
+
+<footer>
+    Proyecto académico - Métodos Numéricos<br>
+    Desafío: Euler en el espacio
+</footer>
+
+<script>
+
+function calcular() {
+
+    const m = Number(document.getElementById("masa").value);
+    const T = Number(document.getElementById("empuje").value);
+    const g = Number(document.getElementById("gravedad").value);
+    const k = Number(document.getElementById("resistencia").value);
+    const h = Number(document.getElementById("paso").value);
+    const tf = Number(document.getElementById("tiempo").value);
+
+    if (
+        !Number.isFinite(m) || m <= 0 ||
+        !Number.isFinite(T) || T < 0 ||
+        !Number.isFinite(g) || g <= 0 ||
+        !Number.isFinite(k) || k < 0 ||
+        !Number.isFinite(tf) || tf <= 0 || tf > 120
+    ) {
+        alert("Por favor, introduce valores válidos.");
+        return;
+    }
+
+    const a = T / m - g;
+    const b = k / m;
+
+    let v = 0;
+    let y = 0;
+    let t = 0;
+
+    const datos = [];
+
+    function exacta(t) {
+
+        if (Math.abs(b) < 1e-12) {
+            return {
+                v: a * t,
+                y: 0.5 * a * t * t
+            };
+        }
+
+        const v = (a / b) * (1 - Math.exp(-b * t));
+
+        const y = (a / b) *
+            (t - (1 - Math.exp(-b * t)) / b);
+
+        return {v, y};
+    }
+
+    datos.push({
+        t, v, y
+    });
+
+    const pasos = Math.ceil(tf / h);
+
+    for (let i = 0; i < pasos; i++) {
+
+        const dt = Math.min(h, tf - t);
+
+        if (dt <= 0) break;
+
+        const velocidadAnterior = v;
+
+        // Método de Euler para la velocidad
+        v = v + dt * (a - b * v);
+
+        // Método de Euler para la altura
+        y = y + dt * velocidadAnterior;
+
+        t += dt;
+
+        datos.push({t, v, y});
+    }
+
+    const ultimo = datos[datos.length - 1];
+    const resultadoExacto = exacta(tf);
+
+    document.getElementById("vEuler").textContent =
+        ultimo.v.toFixed(4);
+
+    document.getElementById("yEuler").textContent =
+        ultimo.y.toFixed(4);
+
+    document.getElementById("vExacta").textContent =
+        resultadoExacto.v.toFixed(4);
+
+    document.getElementById("yExacta").textContent =
+        resultadoExacto.y.toFixed(4);
+
+    document.getElementById("errorV").textContent =
+        Math.abs(ultimo.v - resultadoExacto.v).toFixed(4);
+
+    document.getElementById("errorY").textContent =
+        Math.abs(ultimo.y - resultadoExacto.y).toFixed(4);
+
+    // Crear tabla
+    const tbody = document.getElementById("tablaResultados");
+
+    tbody.innerHTML = "";
+
+    datos.forEach(d => {
+
+        const ex = exacta(d.t);
+
+        const fila = document.createElement("tr");
+
+        [
+            d.t.toFixed(2),
+            d.v.toFixed(4),
+            d.y.toFixed(4),
+            ex.v.toFixed(4),
+            ex.y.toFixed(4)
+        ].forEach(valor => {
+
+            const celda = document.createElement("td");
+            celda.textContent = valor;
+            fila.appendChild(celda);
+
+        });
+
+        tbody.appendChild(fila);
+
+    });
+
+    dibujarGrafica(
+        "graficaVelocidad",
+        datos.map(d => d.t),
+        datos.map(d => d.v),
+        datos.map(d => exacta(d.t).v),
+        "Velocidad (m/s)"
+    );
+
+    dibujarGrafica(
+        "graficaAltura",
+        datos.map(d => d.t),
+        datos.map(d => d.y),
+        datos.map(d => exacta(d.t).y),
+        "Altura (m)"
+    );
+}
+
+
+// Función para dibujar gráficas
+function dibujarGrafica(id, tiempos, valoresEuler, valoresExactos, titulo) {
+
+    const canvas = document.getElementById(id);
+    const ctx = canvas.getContext("2d");
+
+    const anchoCSS = canvas.clientWidth;
+    const altoCSS = 320;
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = anchoCSS * dpr;
+    canvas.height = altoCSS * dpr;
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const W = anchoCSS;
+    const H = altoCSS;
+
+    const margen = {
+        izquierda: 65,
+        derecha: 20,
+        arriba: 25,
+        abajo: 40
+    };
+
+    const todos = valoresEuler.concat(valoresExactos);
+
+    let minY = Math.min(0, ...todos);
+    let maxY = Math.max(...todos);
+
+    if (minY === maxY) maxY = minY + 1;
+
+    const maxX = Math.max(...tiempos) || 1;
+
+    function X(x) {
+        return margen.izquierda +
+            (x / maxX) *
+            (W - margen.izquierda - margen.derecha);
+    }
+
+    function Y(y) {
+        return H - margen.abajo -
+            ((y - minY) / (maxY - minY)) *
+            (H - margen.arriba - margen.abajo);
+    }
+
+    ctx.clearRect(0, 0, W, H);
+
+    ctx.font = "12px Arial";
+    ctx.fillStyle = "#526579";
+    ctx.strokeStyle = "#dce4eb";
+
+    // Líneas horizontales
+    for (let i = 0; i <= 5; i++) {
+
+        const valor = maxY - i * (maxY - minY) / 5;
+        const yy = Y(valor);
+
+        ctx.beginPath();
+        ctx.moveTo(margen.izquierda, yy);
+        ctx.lineTo(W - margen.derecha, yy);
+        ctx.stroke();
+
+        ctx.fillText(valor.toFixed(1), 5, yy + 4);
+    }
+
+    // Etiquetas del eje X
+    for (let i = 0; i <= 5; i++) {
+
+        const valor = maxX * i / 5;
+        const xx = X(valor);
+
+        ctx.fillText(
+            valor.toFixed(1),
+            xx - 10,
+            H - 12
+        );
+    }
+
+    function trazar(valores, color) {
+
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2.5;
+
+        valores.forEach((valor, i) => {
+
+            if (i === 0) {
+                ctx.moveTo(X(tiempos[i]), Y(valor));
+            } else {
+                ctx.lineTo(X(tiempos[i]), Y(valor));
+            }
+
+        });
+
+        ctx.stroke();
+    }
+
+    trazar(valoresEuler, "#286b9b");
+    trazar(valoresExactos, "#e28a32");
+
+    ctx.fillStyle = "#173b5c";
+    ctx.font = "bold 13px Arial";
+    ctx.fillText(titulo, margen.izquierda, 15);
+
+    ctx.fillStyle = "#286b9b";
+    ctx.fillRect(W - 170, 10, 12, 4);
+    ctx.fillStyle = "#526579";
+    ctx.fillText("Euler", W - 152, 16);
+
+    ctx.fillStyle = "#e28a32";
+    ctx.fillRect(W - 85, 10, 12, 4);
+    ctx.fillStyle = "#526579";
+    ctx.fillText("Exacta", W - 67, 16);
+}
+
+
+// Restablecer parámetros
+function restablecer() {
+
+    document.getElementById("masa").value = 1000;
+    document.getElementById("empuje").value = 15000;
+    document.getElementById("gravedad").value = 9.81;
+    document.getElementById("resistencia").value = 100;
+    document.getElementById("paso").value = 2;
+    document.getElementById("tiempo").value = 20;
+
+    calcular();
+}
+
+
+// Ejecutar al abrir
+calcular();
+
+// Redibujar gráficas al cambiar el tamaño
+window.addEventListener("resize", calcular);
+
+</script>
+
+</body>
+</html>
